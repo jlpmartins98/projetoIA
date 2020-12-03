@@ -52,6 +52,7 @@ def adiciona_parede():
 
     if(len(paredes)<6):
         paredes.append([x_parede,y_parede])
+        ev3.screen.print("adicionou parede X: " + x_parede + " e Y: " + y_parede)
 
 def ovelhas():#quando encontra ovelhas
     #encontrar maneira de ele saber quando gritar e quando dar porrada
@@ -111,6 +112,7 @@ def atualiza_posicao():
         informacao.posicao = informacao.posicao - 6            
     elif(informacao.direcao==270):                      #Virado para a esquerda
         informacao.posicao = informacao.posicao - 1
+    ev3.screen.print("cacifo atual: " + informacao.posicao)
 
 def andar():
     while(sensor_cor.color()== Color.WHITE):
