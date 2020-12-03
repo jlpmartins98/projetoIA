@@ -14,10 +14,11 @@ class Pastor:
         self.posicao = posicao
         self.direcao = direcao
 
+
 paredes = [] #array com as paredes 
-ovelhas=0
 ev3=EV3Brick()
 encontrou_parede = 0
+batatadas_totais = 0
 motor_esquerdo = Motor(Port.B)
 motor_direito = Motor(Port.C)
 motor_braco = Motor(Port.D)
@@ -54,16 +55,18 @@ def adiciona_parede():
 
 def ovelhas():#quando encontra ovelhas
     #encontrar maneira de ele saber quando gritar e quando dar porrada
-    toque = 0
+    global batatadas_totais
     if(obstacle_sensor.distance() < 200):#verificar distancia
         robot.stop()
-        if(n_random == 0):
+        if(n_random == 0): #bate na ovelha
             motor_braco.drive(75,0)
             if(toque.pressed()):
-                toque += 1
-                return toque #ver como depois guardar as batatas q deu nas ovelhas
-        elif(n_random == 1):
+                fala.speak("OUCH") #ver como depois guardar as batatas q deu nas ovelhas
+                batatadas_totais += 1
+        elif(n_random == 1): #berra com a ovelha
             fala.speak("SHEEP")
+
+
 
 def vira(graus):
     #while(informacao.direcao != graus):   #enquanto a direção não for a pretendida
