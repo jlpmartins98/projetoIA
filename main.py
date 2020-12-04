@@ -5,7 +5,7 @@ from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor,
 from pybricks.parameters import Port, Stop, Direction, Button, Color
 from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
-from pybricks.media.ev3dev import SoundFile, ImageFile, Sound
+from pybricks.media.ev3dev import SoundFile, ImageFile
 import random
 
 
@@ -23,7 +23,7 @@ motor_esquerdo = Motor(Port.B)
 motor_direito = Motor(Port.C)
 motor_braco = Motor(Port.D)
 toque = TouchSensor(Port.S1)
-fala = Sound()
+#fala = SoundFile()
 #cima = 0
 #direita = 90
 #baixo = 180
@@ -32,40 +32,48 @@ obstacle_sensor = UltrasonicSensor(Port.S2)
 sensor_toque = TouchSensor(Port.S1)
 sensor_cor = ColorSensor(Port.S4)
 
-n_random = random.randint(0,1)  
+  
 
 robot = DriveBase(motor_esquerdo, motor_direito, wheel_diameter = 55.5, axle_track= 104)
 
 informacao = Pastor(1,0)  #Informação sobre o robot
 
 def adiciona_parede():
+    #ev3.speaker.beep()
     x_parede = informacao.posicao
     y_parede = 0
     if(informacao.direcao==0): # Virado para cima
         y_parede = x_parede + 6
-    elif(informacao.direcao==90): # Virado para a direita
+    elif(informacao.direcao==270): # Virado para a direita
         y_parede = x_parede + 1
     elif(informacao.direcao==180): # Virado para baixo
         y_parede = x_parede - 6
-    elif(informacao.direcao==270): # Virado para a esquerda
+    elif(informacao.direcao==90): # Virado para a esquerda
         y_parede = x_parede -1
 
     if(len(paredes)<6):
         paredes.append([x_parede,y_parede])
-        ev3.screen.print("adicionou parede X: " + x_parede + " e Y: " + y_parede)
+        #ev3.screen.print("adicionou parede X: " + x_parede + " e Y: " + y_parede)
 
 def ovelhas():#quando encontra ovelhas
     #encontrar maneira de ele saber quando gritar e quando dar porrada
     global batatadas_totais
+    n_random = 0
+    #ev3.speaker.beep()
     if(obstacle_sensor.distance() < 200):#verificar distancia
-        robot.stop()
+        #ev3.speaker.beep()
+        #robot.stop()
         if(n_random == 0): #bate na ovelha
-            motor_braco.drive(75,0)
+            motor_braco.run(400)
+            motor_braco.stop()
             if(toque.pressed()):
-                fala.speak("OUCH") #ver como depois guardar as batatas q deu nas ovelhas
+                #ev3.speaker.beep()
+                #Sound.speak("OUCH") #ver como depois guardar as batatas q deu nas ovelhas
                 batatadas_totais += 1
+                motor_braco.reset_angle(0)
         elif(n_random == 1): #berra com a ovelha
-            fala.speak("SHEEP")
+            ev3.speaker.beep()
+            #ev3.speaker.beep()
 
 
 
@@ -78,16 +86,19 @@ def vira(graus):
          #   informacao.direcao = informacao.direcao +90
           #  robot.turn(90)
     robot.turn(graus)
+    robot.turn(20)
     informacao.direcao = informacao.direcao + graus
-    informacao.direcao = informacao.direcao % 360
+    #ev3.speaker.beep()
+    informacao.direcao = int (informacao.direcao % 360)
 
 def pode_avancar():
+    #ev3.speaker.beep()
     if(informacao.direcao ==0): #Se estiver virado para cima
-        if(informacao.posicao >=30): # E na linha de cima 
+        if(informacao.posicao >30): # E na linha de cima 
             return False #não pode avançar
         else:
             return True #caso contrario avança
-    elif(informacao.direcao==90): #Se estiver virado para a direita
+    elif(informacao.direcao==270): #Se estiver virado para a direita
         if(informacao.posicao %6 ==0): #e na coluna da direita
             return False #não pode avançar
         else:
@@ -106,30 +117,33 @@ def pode_avancar():
 def atualiza_posicao():
     if(informacao.direcao==0):                          #Virado para cima
         informacao.posicao = informacao.posicao + 6            
-    elif(informacao.direcao==90):                       #Virado para a direita
+    elif(informacao.direcao==270):                       #Virado para a direita
         informacao.posicao = informacao.posicao + 1            
     elif(informacao.direcao==180):                      #Virado para baixo
         informacao.posicao = informacao.posicao - 6            
-    elif(informacao.direcao==270):                      #Virado para a esquerda
+    elif(informacao.direcao==90):                      #Virado para a esquerda
         informacao.posicao = informacao.posicao - 1
-    ev3.screen.print("cacifo atual: " + informacao.posicao)
+    
+    
 
 def andar():
     while(sensor_cor.color()== Color.WHITE):
-        robot.drive(100,-1)
-    robot.stop()
+        robot.drive(75,-1)
+    robot.stop() #quando deixa de ver branco para de andar
+    #wait(10)
     if(sensor_cor.color()==Color.BLACK): #Encontra limite do cacifo
-        ovelhas()
+        #ovelhas()
         #ev3.speaker.beep()
-        if(pode_avancar()):
-            robot.straight(150) #Anda até o centro do cacifo adjacente
+        teste = pode_avancar()
+        if(teste):
+            robot.straight(200) #Anda até o centro do cacifo adjacente
             atualiza_posicao()
         else:
             robot.straight(-50) # Volta para trás
             vira(270) #Roda para a esquerda               
-    elif(sensor_cor.color()==Color.RED): #Encontra parede 
-        ovelhas()
+    elif(sensor_cor.color()==Color.RED): #Encontra parede        
         adiciona_parede()
+        ev3.speaker.beep()
         robot.straight(-50)
         vira(270)
         
@@ -137,12 +151,14 @@ def andar():
 
 
 def main():
-    while 1:
-        motor_braco.hold()
-        andar()
-        if(sensor_cor.color()==Color.BLUE):
+    while True:
+        #andar()
+        ovelhas()
+        #ev3.speaker.beep()
+        
+        if(informacao.posicao==36 or sensor_cor.color() == Color.BLUE):
             robot.Stop()
-         
+        #ev3.screen.print("cacifo atual: " + informacao.posicao)
 
 if (__name__ == "__main__"):
     main() 
