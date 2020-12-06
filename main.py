@@ -19,9 +19,10 @@ paredes = [] #array com as paredes
 ev3=EV3Brick()
 encontrou_parede = 0
 batatadas_totais = 0
-motor_esquerdo = Motor(Port.B)
+precionado = 0
+motor_esquerdo = Motor(Port.A)
 motor_direito = Motor(Port.C)
-motor_braco = Motor(Port.D)
+motor_braco = Motor(Port.B,Direction.COUNTERCLOCKWISE)
 toque = TouchSensor(Port.S1)
 #fala = SoundFile()
 #cima = 0
@@ -59,22 +60,25 @@ def ovelhas():#quando encontra ovelhas
     #encontrar maneira de ele saber quando gritar e quando dar porrada
     global batatadas_totais
     n_random = 0
+    global precionado
     #ev3.speaker.beep()
     if(obstacle_sensor.distance() < 200):#verificar distancia
         #ev3.speaker.beep()
         #robot.stop()
         if(n_random == 0): #bate na ovelha
-            motor_braco.run(400)
-            motor_braco.stop()
-            if(toque.pressed()):
+            if (precionado == 0):
+                motor_braco.run_target(10000, -360)
+                if(toque.pressed()):
+                    precionado = 1
+                #motor_braco.run(-200)
+            else:
                 #ev3.speaker.beep()
-                #Sound.speak("OUCH") #ver como depois guardar as batatas q deu nas ovelhas
+                motor_braco.run_target(400,90)
                 batatadas_totais += 1
-                motor_braco.reset_angle(0)
+                #motor_braco.stop()
         elif(n_random == 1): #berra com a ovelha
             ev3.speaker.beep()
             #ev3.speaker.beep()
-
 
 
 def vira(graus):
@@ -155,9 +159,8 @@ def main():
         #andar()
         ovelhas()
         #ev3.speaker.beep()
-        
-        if(informacao.posicao==36 or sensor_cor.color() == Color.BLUE):
-            robot.Stop()
+        #if(informacao.posicao==36 or sensor_cor.color() == Color.BLUE):
+        #    robot.Stop()
         #ev3.screen.print("cacifo atual: " + informacao.posicao)
 
 if (__name__ == "__main__"):
