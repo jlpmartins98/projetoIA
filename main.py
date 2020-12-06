@@ -6,7 +6,7 @@ from pybricks.parameters import Port, Stop, Direction, Button, Color
 from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
-import random
+from random import randint
 
 
 class Pastor:
@@ -17,9 +17,9 @@ class Pastor:
 
 paredes = [] #array com as paredes 
 ev3=EV3Brick()
+precionado = 0
 encontrou_parede = 0
 batatadas_totais = 0
-precionado = 0
 motor_esquerdo = Motor(Port.A)
 motor_direito = Motor(Port.C)
 motor_braco = Motor(Port.B,Direction.COUNTERCLOCKWISE)
@@ -59,26 +59,23 @@ def adiciona_parede():
 def ovelhas():#quando encontra ovelhas
     #encontrar maneira de ele saber quando gritar e quando dar porrada
     global batatadas_totais
-    n_random = 0
-    global precionado
+    aleatorio = 0
+    global precionado 
     #ev3.speaker.beep()
     if(obstacle_sensor.distance() < 200):#verificar distancia
-        #ev3.speaker.beep()
-        #robot.stop()
-        if(n_random == 0): #bate na ovelha
+        if(aleatorio == 0): #bate na ovelha
             if (precionado == 0):
-                motor_braco.run_target(10000, -360)
+                motor_braco.track_target(-1500)
                 if(toque.pressed()):
                     precionado = 1
-                #motor_braco.run(-200)
             else:
-                #ev3.speaker.beep()
-                motor_braco.run_target(400,90)
+                wait(3000)
+                motor_braco.run_target(400,180)
                 batatadas_totais += 1
-                #motor_braco.stop()
-        elif(n_random == 1): #berra com a ovelha
-            ev3.speaker.beep()
+        elif(aleatorio == 1): #berra com a ovelha
+            ev3.speaker.play_file(SoundFile.ELEPHANT_CALL)
             #ev3.speaker.beep()
+        wait(3000)
 
 
 def vira(graus):
@@ -136,7 +133,7 @@ def andar():
     robot.stop() #quando deixa de ver branco para de andar
     #wait(10)
     if(sensor_cor.color()==Color.BLACK): #Encontra limite do cacifo
-        #ovelhas()
+        ovelhas()
         #ev3.speaker.beep()
         teste = pode_avancar()
         if(teste):
@@ -156,8 +153,8 @@ def andar():
 
 def main():
     while True:
-        #andar()
-        ovelhas()
+        andar()
+        #ovelhas()
         #ev3.speaker.beep()
         #if(informacao.posicao==36 or sensor_cor.color() == Color.BLUE):
         #    robot.Stop()
