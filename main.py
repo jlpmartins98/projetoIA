@@ -11,8 +11,8 @@ from random import randint
 
 class Pastor:
     def __init__(self,posicao,direcao): 
-        self.posicao = posicao
-        self.direcao = direcao
+        self.posicao = posicao #quadrado em que se encontra
+        self.direcao = direcao #lado para o qual esta virado (0 graus é para cima)
 
 
 paredes = [] #array com as paredes 
@@ -53,14 +53,14 @@ def adiciona_parede():
     elif(informacao.direcao==90): # Virado para a esquerda
         y_parede = x_parede -1
 
-    if(len(paredes)<6):
+    if(([x_parede, y_parede] not in paredes)):#verifica se essa parede ja se encontra no array (pode ter as duas posiçoes em que encontra a parede)
         paredes.append([x_parede,y_parede])
-        #ev3.screen.print("adicionou parede X: " + x_parede + " e Y: " + y_parede)
+        
 
 def pode_avancar_parede():
     #percorrer o array das paredes para ver
     #ver se a posicao atual é y_parede x_parede
-    #e devolver se tem parede adjacente
+    #e devolver se tem parede adjacente ou seja se pode avancar ou nao
     for k in paredes: #percorre o array das paredes
         if(k[0] == informacao.posicao):
             if(informacao.posicao + 6 == k[1]):#caso a parede esteja para cima
@@ -107,27 +107,10 @@ def pode_avancar_parede():
     return True
 
 
-
-def adiciona_parede():
-    #ev3.speaker.beep()
-    x_parede = informacao.posicao
-    y_parede = 0
-    if(informacao.direcao==0): # Virado para cima
-        y_parede = x_parede + 6
-    elif(informacao.direcao==270): # Virado para a direita
-        y_parede = x_parede + 1
-    elif(informacao.direcao==180): # Virado para baixo
-        y_parede = x_parede - 6
-    elif(informacao.direcao==90): # Virado para a esquerda
-        y_parede = x_parede -1
-    if(len(paredes)<6):
-        paredes.append([x_parede,y_parede])
-        #ev3.screen.print("adicionou parede X: " + x_parede + " e Y: " + y_parede)
-
 def ovelhas():#quando encontra ovelhas
     #encontrar maneira de ele saber quando gritar e quando dar porrada
-    global batatadas_totais
-    aleatorio = randint(0,1)
+    global batatadas_totais #total de vezes que ja bateu nas ovelhas
+    aleatorio = randint(0,2)
     global precionado 
     #ev3.speaker.beep()
     if(obstacle_sensor.distance() < 200):#verificar distancia
@@ -138,34 +121,24 @@ def ovelhas():#quando encontra ovelhas
                 if(toque.pressed()):
                     precionado = 1
                     motor_braco.stop()
-            #wait(1000)
+                    batatadas_totais += 1
             motor_braco.run_target(400,10)
-            #ev3.speaker.beep()
-            batatadas_totais += 1
             precionado=0
-        elif(aleatorio == 1): #berra com a ovelha
+        elif(aleatorio == 1): #ladra com a ovelha
             ev3.speaker.play_file(SoundFile.DOG_BARK_2)
-        wait(2000)
+        wait(3000)
 
 
-def vira(graus):
-    #while(informacao.direcao != graus):   #enquanto a direção não for a pretendida
-     #   if(informacao.direcao > graus):      #Roda uma vez para a esquerda
-      #      informacao.direcao = informacao.direcao -90
-       #     robot.turn(-90)
-        #elif(informacao.direcao > graus):   #Roda uma vez para a direita
-         #   informacao.direcao = informacao.direcao +90
-          #  robot.turn(90)
+def vira(graus): #vira o robo pelos graus inseridos (sentido contrahorario)
     robot.turn(graus)
-    if(graus == 270):
+    if(graus == 270): #para endireitar o robo como ele nunca vira direito
         robot.turn(20)
-    elif(graus == 180):
+    elif(graus == 180):#para endireitar o robo como ele nunca vira direito
         robot.turn(10)
-    elif(graus == 90):
+    elif(graus == 90):#para endireitar o robo como ele nunca vira direito
         robot.turn(5)
-    informacao.direcao = informacao.direcao + graus
-    informacao.direcao = int (informacao.direcao % 360)
-    return
+    informacao.direcao = informacao.direcao + graus #atualiza a direçao do robo
+    informacao.direcao = int (informacao.direcao % 360) #da o resto da divisao inteira da sua direçao por 360 para os graus nunca ultrapassarem 360
 
 def pode_avancar():
     if(informacao.direcao ==0): #Se estiver virado para cima
@@ -202,19 +175,21 @@ def atualiza_posicao():
 
 
 def andar():
-    global graus
-    global i
+    global graus #array com os graus que pode virar
+    global i #serve para guardar quantas extremidades do quadrado ja verificou
     aleatorio = randint(0,2)
-    virar=graus[aleatorio]
+    virar=graus[aleatorio] #seliciona aleatoriamente se vai virar 90;180 ou 270 graus
     while(sensor_cor.color()== Color.WHITE):
         robot.drive(75,-1)
     robot.stop() #quando deixa de ver branco para de andar
     if(sensor_cor.color()==Color.BLACK): #Encontra limite do cacifo
         ovelhas()
+        if(obstacle_sensor.distance() < 200):#verificar distancia
+            robot.turn(90)
         robot.straight(-50)
         vira(90)
         i+=1
-        if(i >= 4):
+        if(i >= 4): #quando ja verificou todos os lados do quadrado
             vira(virar) #depois de ver as quatros paredes vira para um lado random
             if(pode_avancar() and pode_avancar_parede()):
                 robot.straight(200) #Anda até o centro do cacifo adjacente
@@ -225,7 +200,9 @@ def andar():
                 ev3.speaker.beep() 
                 vira(virar) #Roda para aleatorio              
     elif(sensor_cor.color()==Color.RED): #Encontra parede
-        ovelhas()      
+        ovelhas()
+        if(obstacle_sensor.distance() < 200):#verificar distancia
+            robot.turn(90)      
         adiciona_parede()
         ev3.speaker.beep()
         robot.straight(-50)
@@ -235,11 +212,9 @@ def andar():
 def main():
     while True:
         andar()
-        #ovelhas()
         #ev3.speaker.beep()
         if(sensor_cor.color() == Color.BLUE):
             robot.Stop()
-        #ev3.screen.print("cacifo atual: " + informacao.posicao)
 
 if (__name__ == "__main__"):
     main() 
