@@ -25,11 +25,6 @@ motor_direito = Motor(Port.C)
 motor_braco = Motor(Port.B,Direction.COUNTERCLOCKWISE)
 toque = TouchSensor(Port.S1)
 i = 0
-#fala = SoundFile()
-#cima = 0
-#direita = 90
-#baixo = 180
-#esquerda = 270
 obstacle_sensor = UltrasonicSensor(Port.S2)
 sensor_toque = TouchSensor(Port.S1)
 sensor_cor = ColorSensor(Port.S4)
@@ -43,7 +38,6 @@ robot = DriveBase(motor_esquerdo, motor_direito, wheel_diameter = 55.5, axle_tra
 informacao = Pastor(1,0)  #Informação sobre o robot
 
 def adiciona_parede():
-    #ev3.speaker.beep()
     x_parede = informacao.posicao
     y_parede = 0
     if(informacao.direcao==0): # Virado para cima
@@ -107,18 +101,20 @@ def pode_avancar_parede():
                 else:
                     return True
     return True
-
+#adiciona o cacifo, ao array cacifos visitados 
 def adiciona_visitados(pos):
-    visitado = procura_visitado(pos)
+    visitado = procura_visitado(pos) #procura se já está no array
     if(visitado == False):
         cacifos_visitados.append(pos)
     print(cacifos_visitados)
 
+#percorre o array dos visitados 
 def procura_visitado(t):
     for j in cacifos_visitados:
-        if (j==t):
+        if (j==t): #e ve se o cacifo já está lá 
             return True
     return False
+
 
 def verifica_cacifo():
     global i
@@ -172,23 +168,25 @@ def verifica_cacifo():
         array_pode_avancar = [] #Limpa o array
         cacifos_prioritarios = [] # Limpa prioritários
 
+#muda a direcao
 def coloca_direcao(direcao):
     while(informacao.direcao != direcao):   # Roda para a esquerda até a direção ser a pretendida
         vira(90)
-        
+
+#escolhe qual cacifo ir 
 def escolhe_prioridade(lista):
     for k in lista:
         if (k== 0):
-            if(procura_visitado(informacao.posicao + 6)==False):
+            if(procura_visitado(informacao.posicao + 6)==False): #verifica o cacifo de cima
                 cacifos_prioritarios.append(k)
         if (k== 90):
-            if(procura_visitado(informacao.posicao - 1)==False):
+            if(procura_visitado(informacao.posicao - 1)==False): #verifica o cacifo da esquerda
                 cacifos_prioritarios.append(k)          
         if (k== 180):
-            if(procura_visitado(informacao.posicao - 6)==False):
+            if(procura_visitado(informacao.posicao - 6)==False): #verifica o cacifo de baixo
                 cacifos_prioritarios.append(k)
         if (k== 270):
-            if(procura_visitado(informacao.posicao + 1)==False):
+            if(procura_visitado(informacao.posicao + 1)==False): #verifica o cacifo da direita
                 cacifos_prioritarios.append(k)
 
 
@@ -296,7 +294,6 @@ def andar():
         
 def main():
     while True:
-        #andar()
         verifica_cacifo()
         #if(sensor_cor.color() == Color.BLUE):
         #    robot.Stop()
