@@ -165,6 +165,7 @@ def verifica_cacifo():
             else:
                 coloca_direcao(array_pode_avancar[0])
         robot.straight(200) #Avança até o próximo cacifo
+        adiciona_visitados(informacao.posicao)
         atualiza_posicao() 
         i= 0 #Reseta o contador
         array_pode_avancar = [] #Limpa o array
@@ -297,8 +298,8 @@ def main():
     while True:
         #andar()
         verifica_cacifo()
-        if(sensor_cor.color() == Color.BLUE):
-            robot.Stop()
+        #if(sensor_cor.color() == Color.BLUE):
+        #    robot.Stop()
 
 if (__name__ == "__main__"):
     main() 
