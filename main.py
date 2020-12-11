@@ -14,7 +14,7 @@ class Pastor:
         self.posicao = posicao #quadrado em que se encontra
         self.direcao = direcao #lado para o qual esta virado (0 graus é para cima)
 
-
+array_pode_avancar = []
 paredes = [] #array com as paredes 
 ev3=EV3Brick()
 precionado = 0
@@ -35,6 +35,8 @@ sensor_toque = TouchSensor(Port.S1)
 sensor_cor = ColorSensor(Port.S4)
 graus=[90,180,270]
 lugares_visitados = []
+cacifos_visitados = [1]
+cacifos_prioritarios = []
 
 robot = DriveBase(motor_esquerdo, motor_direito, wheel_diameter = 55.5, axle_track= 104)
 
@@ -105,6 +107,88 @@ def pode_avancar_parede():
                 else:
                     return True
     return True
+
+def adiciona_visitados(pos):
+    visitado = procura_visitado(pos)
+    if(visitado == False):
+        cacifos_visitados.append(pos)
+    print(cacifos_visitados)
+
+def procura_visitado(t):
+    for j in cacifos_visitados:
+        if (j==t):
+            return True
+    return False
+
+def verifica_cacifo():
+    global i
+    global array_pode_avancar#Array que guarda as direções que o robot pode ir
+    global cacifos_prioritarios
+    while(sensor_cor.color()==Color.WHITE): #Avança até ao limite do cacifo
+        robot.drive(75,-1)
+    robot.stop()
+    if(sensor_cor.color()==Color.RED):  #Encontrou parede
+        ovelhas()
+        adiciona_parede()          #Adiciona parede ao array
+        robot.straight(-50)     #Volta para trás
+        i +=1                   #Atualiza o i
+        vira(90)
+    elif(sensor_cor.color()==Color.BLACK): #Encontrou limite do cacifo
+        ovelhas()
+        if(obstacle_sensor.distance() < 200):#verificar distancia
+            vira(90)
+        robot.straight(-50)     #Volta para trás
+        teste_pode_avancar = pode_avancar() #Verifica se pode avançar(Se não é limite do tabuleiro)
+        i+=1                    #Atualiza o i
+        if(teste_pode_avancar == True): #Caso possa avançar nessa direção
+            array_pode_avancar.append(informacao.direcao) #Adiciona essa direção ao array
+        vira(90)
+    if(i>=4):       #Já verificou todos os lados do cacifo
+        escolhe_prioridade(array_pode_avancar) #Dos arrays possíveis procura um que não foi visitado
+        opcoes_prioridade = len(cacifos_prioritarios)       #Obtem tamanho do array prioritario
+        print(cacifos_prioritarios)
+        print(array_pode_avancar)
+        if(opcoes_prioridade > 0):                  #Se existir algum com prioridade
+            op_prio = opcoes_prioridade -1        
+            if(op_prio>0):
+                aleatorio_prio = randint(0,op_prio)   #Escolhe um aleatóriamente
+                direcao_prioridade = cacifos_prioritarios[aleatorio_prio]       
+                coloca_direcao(direcao_prioridade)
+            else: 
+                coloca_direcao(cacifos_prioritarios[0])
+        else:      
+            opcoes = len(array_pode_avancar) - 1 # numero de opcoes disponiveis
+            if(opcoes >0):
+                aleatorio = randint(0,opcoes) #Escolhe uma aleatoriamente
+                direcao = array_pode_avancar[aleatorio]
+                coloca_direcao(direcao) #coloca o robot nesse direção
+            else:
+                coloca_direcao(array_pode_avancar[0])
+        robot.straight(200) #Avança até o próximo cacifo
+        atualiza_posicao() 
+        i= 0 #Reseta o contador
+        array_pode_avancar = [] #Limpa o array
+        cacifos_prioritarios = [] # Limpa prioritários
+
+def coloca_direcao(direcao):
+    while(informacao.direcao != direcao):   # Roda para a esquerda até a direção ser a pretendida
+        vira(90)
+
+
+def escolhe_prioridade(lista):
+    for k in lista:
+        if (k== 0):
+            if(procura_visitado(informacao.posicao + 6)==False):
+                cacifos_prioritarios.append(k)
+        if (k== 90):
+            if(procura_visitado(informacao.posicao - 1)==False):
+                cacifos_prioritarios.append(k)          
+        if (k== 180):
+            if(procura_visitado(informacao.posicao - 6)==False):
+                cacifos_prioritarios.append(k)
+        if (k== 270):
+            if(procura_visitado(informacao.posicao + 1)==False):
+                cacifos_prioritarios.append(k)
 
 
 def ovelhas():#quando encontra ovelhas
@@ -185,7 +269,7 @@ def andar():
     if(sensor_cor.color()==Color.BLACK): #Encontra limite do cacifo
         ovelhas()
         if(obstacle_sensor.distance() < 200):#verificar distancia
-            robot.turn(90)
+            vira(90)
         robot.straight(-50)
         vira(90)
         i+=1
@@ -211,8 +295,8 @@ def andar():
         
 def main():
     while True:
-        andar()
-        #ev3.speaker.beep()
+        #andar()
+        verifica_cacifo()
         if(sensor_cor.color() == Color.BLUE):
             robot.Stop()
 
