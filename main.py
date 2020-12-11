@@ -129,7 +129,8 @@ def verifica_cacifo():
     robot.stop()
     if(sensor_cor.color()==Color.RED):  #Encontrou parede
         ovelhas()
-        adiciona_parede()          #Adiciona parede ao array
+        adiciona_parede()
+        ev3.speaker.beep()          #Adiciona parede ao array
         robot.straight(-50)     #Volta para trás
         i +=1                   #Atualiza o i
         vira(90)
@@ -174,8 +175,7 @@ def verifica_cacifo():
 def coloca_direcao(direcao):
     while(informacao.direcao != direcao):   # Roda para a esquerda até a direção ser a pretendida
         vira(90)
-
-
+        
 def escolhe_prioridade(lista):
     for k in lista:
         if (k== 0):
