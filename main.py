@@ -14,6 +14,11 @@ class Pastor:
         self.posicao = posicao #quadrado em que se encontra
         self.direcao = direcao #lado para o qual esta virado (0 graus é para cima)
 
+class cacifo:
+    def __init__(self,numeroCacifo,distanciaObjetivo):
+        self.numeroCacifo = numeroCacifo #o numero do quadrado (para o robo saber a posiçao)
+        self.distanciaOjetivo = distanciaObjetivo #a heuristica, distancia até a cerca/ovelha
+
 array_pode_avancar = []
 paredes = [] #array com as paredes 
 ev3=EV3Brick()
@@ -32,10 +37,44 @@ graus=[90,180,270]
 lugares_visitados = []
 cacifos_visitados = [1]
 cacifos_prioritarios = []
+posicao_ovelhas = []
 
 robot = DriveBase(motor_esquerdo, motor_direito, wheel_diameter = 55.5, axle_track= 104)
 
 informacao = Pastor(1,0)  #Informação sobre o robot
+arrayCacifos_com_heuristica = [] #array que guarda os cacifos com o seu numero e heuristica ate á cerca
+
+def guarda_posicao_ovelha():
+    k = informacao.posicao
+    if(informacao.direcao == 0):#se a ovelha estiver acima do robo
+        k += 6
+    if(informacao.direcao == 90):#se a ovelha estiver a esquerda 
+        k -= 1
+    if(informacao.direcao == 180):#se a ovelha estiver abaixo
+        k -= 6
+    if(informacao.posicao == 270):#se a ovelha estiver a direita
+        k += 1
+    if(k not in posicao_ovelhas):
+        posicao_ovelhas.append(k)
+
+
+
+def inicializaCacifos():
+    k = 10 #k é a heuristica do cacifo até a cerca
+    for j in range(1,37):#j é o numero do cacifo
+        if(j==7):
+            k=9
+        if(j==13):
+            k=8
+        if(j==19):
+            k=7
+        if(j==25):
+            k=6
+        if(j==31):
+            k=5
+        CacifoClasse = cacifo(j,k)
+        arrayCacifos_com_heuristica.append(CacifoClasse)
+        k-=1
 
 def adiciona_parede():
     x_parede = informacao.posicao
@@ -48,9 +87,11 @@ def adiciona_parede():
         y_parede = x_parede - 6
     elif(informacao.direcao==90): # Virado para a esquerda
         y_parede = x_parede -1
-
     if(([x_parede, y_parede] not in paredes)):#verifica se essa parede ja se encontra no array (pode ter as duas posiçoes em que encontra a parede)
         paredes.append([x_parede,y_parede])
+        return True
+    elif(([x_parede, y_parede] in paredes)):
+        return False
         
 
 def pode_avancar_parede():
@@ -115,6 +156,11 @@ def procura_visitado(t):
             return True
     return False
 
+def atualizaHeuristica():
+    if(adiciona_parede() == False):
+        return
+    else:
+        #atualiza a heuristica do cacifo em q se encontra E do outro cacifo adajacente a parede
 
 def verifica_cacifo():
     global i
@@ -197,19 +243,22 @@ def ovelhas():#quando encontra ovelhas
     global precionado 
     #ev3.speaker.beep()
     if(obstacle_sensor.distance() < 200):#verificar distancia
-        if(aleatorio == 0): #bate na ovelha
-            while(precionado == 0):
-                wait(1000)
-                motor_braco.track_target(-1500)
-                if(toque.pressed()):
-                    precionado = 1
-                    motor_braco.stop()
-                    batatadas_totais += 1
-            motor_braco.run_target(400,10)
-            precionado=0
-        elif(aleatorio == 1): #ladra com a ovelha
-            ev3.speaker.play_file(SoundFile.DOG_BARK_2)
-        wait(3000)
+        if(len(posicao_ovelhas) != 2): #se ainda nao tiver encontrado as duas ovelhas guarda a posiçao da q encontrou
+            guarda_posicao_ovelha
+        else:
+            if(aleatorio == 0): #bate na ovelha
+                while(precionado == 0):
+                    wait(1000)
+                    motor_braco.track_target(-1500)
+                    if(toque.pressed()):
+                        precionado = 1
+                        motor_braco.stop()
+                        batatadas_totais += 1
+                motor_braco.run_target(400,10)
+                precionado=0
+            elif(aleatorio == 1): #ladra com a ovelha
+                ev3.speaker.play_file(SoundFile.DOG_BARK_2)
+            wait(3000)
 
 
 def vira(graus): #vira o robo pelos graus inseridos (sentido contrahorario)
@@ -296,7 +345,7 @@ def main():
     while True:
         verifica_cacifo()
         #if(sensor_cor.color() == Color.BLUE):
-        #    robot.Stop()
+            #robot.Stop()
 
 if (__name__ == "__main__"):
     main() 
