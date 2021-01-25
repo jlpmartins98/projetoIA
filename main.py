@@ -15,9 +15,14 @@ class Pastor:
         self.direcao = direcao #lado para o qual esta virado (0 graus é para cima)
 
 class cacifo:
-    def __init__(self,numeroCacifo,distanciaObjetivo):
+    def __init__(self,numeroCacifo,distanciaObjetivo,paredeUp,paredeDown,paredeRight,paredeLeft):
         self.numeroCacifo = numeroCacifo #o numero do quadrado (para o robo saber a posiçao)
         self.distanciaOjetivo = distanciaObjetivo #a heuristica, distancia até a cerca/ovelha
+        #self.custoCaminho = custoCaminho
+        self.paredeUp = False
+        self.paredeDown = False
+        self.paredeRight = False
+        self.paredeLeft = False
 
 array_pode_avancar = []
 paredes = [] #array com as paredes 
@@ -57,9 +62,7 @@ def guarda_posicao_ovelha():
     if(k not in posicao_ovelhas):
         posicao_ovelhas.append(k)
 
-
-
-def inicializaCacifos():
+def inicializaCacifos():#funcao que da os valores da heuristica e custo do caminho a todos os cacifos (antes de encontrar paredes/ovelhas)
     k = 10 #k é a heuristica do cacifo até a cerca
     for j in range(1,37):#j é o numero do cacifo
         if(j==7):
@@ -72,26 +75,32 @@ def inicializaCacifos():
             k=6
         if(j==31):
             k=5
-        CacifoClasse = cacifo(j,k)
+        CacifoClasse = cacifo(j,k,False,False,False,False)
         arrayCacifos_com_heuristica.append(CacifoClasse)
         k-=1
 
 def adiciona_parede():
-    x_parede = informacao.posicao
-    y_parede = 0
-    if(informacao.direcao==0): # Virado para cima
-        y_parede = x_parede + 6
-    elif(informacao.direcao==270): # Virado para a direita
-        y_parede = x_parede + 1
-    elif(informacao.direcao==180): # Virado para baixo
-        y_parede = x_parede - 6
-    elif(informacao.direcao==90): # Virado para a esquerda
-        y_parede = x_parede -1
-    if(([x_parede, y_parede] not in paredes)):#verifica se essa parede ja se encontra no array (pode ter as duas posiçoes em que encontra a parede)
-        paredes.append([x_parede,y_parede])
-        return True
-    elif(([x_parede, y_parede] in paredes)):
-        return False
+    #x_parede = informacao.posicao
+    #y_parede = 0
+    for j in arrayCacifos_com_heuristica: #percorre cada elemento da classe cacifo do array
+        if(j.numeroCacifo == informacao.posicao): #quando encontra o cacifo atual 
+            if(informacao.direcao==0): # Virado para cima
+                #y_parede = x_parede + 6
+                j.paredeUp = True
+            elif(informacao.direcao==270): # Virado para a direita
+                #y_parede = x_parede + 1
+                j.paredeRight = True
+            elif(informacao.direcao==180): # Virado para baixo
+                #y_parede = x_parede - 6
+                j.paredeDown = True
+            elif(informacao.direcao==90): # Virado para a esquerda
+                #y_parede = x_parede -1
+                j.paredeLeft = True
+            #if(([x_parede, y_parede] not in paredes)):#verifica se essa parede ja se encontra no array (pode ter as duas posiçoes em que encontra a parede)
+                #paredes.append([x_parede,y_parede])
+                #return True
+            #elif(([x_parede, y_parede] in paredes)):
+                #return False
         
 
 def pode_avancar_parede():
@@ -156,11 +165,6 @@ def procura_visitado(t):
             return True
     return False
 
-def atualizaHeuristica():
-    if(adiciona_parede() == False):
-        return
-    else:
-        #atualiza a heuristica do cacifo em q se encontra E do outro cacifo adajacente a parede
 
 def verifica_cacifo():
     global i
@@ -244,7 +248,7 @@ def ovelhas():#quando encontra ovelhas
     #ev3.speaker.beep()
     if(obstacle_sensor.distance() < 200):#verificar distancia
         if(len(posicao_ovelhas) != 2): #se ainda nao tiver encontrado as duas ovelhas guarda a posiçao da q encontrou
-            guarda_posicao_ovelha
+            guarda_posicao_ovelha()
         else:
             if(aleatorio == 0): #bate na ovelha
                 while(precionado == 0):
