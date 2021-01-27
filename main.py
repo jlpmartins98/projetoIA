@@ -1,4 +1,5 @@
 #!/usr/bin/env pybricks-micropython
+from os import close
 from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import (Motor, TouchSensor, ColorSensor,
                                  InfraredSensor, UltrasonicSensor, GyroSensor)
@@ -7,7 +8,7 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 from random import randint
-
+import copy as cp #preciso para fazer o algoritmo sena o python altera a variave global
 
 class Pastor:
     def __init__(self,posicao,direcao): 
@@ -15,14 +16,17 @@ class Pastor:
         self.direcao = direcao #lado para o qual esta virado (0 graus é para cima)
 
 class cacifo:
-    def __init__(self,numeroCacifo,distanciaObjetivo,paredeUp,paredeDown,paredeRight,paredeLeft):
+    def __init__(self,parentCacifo,numeroCacifo,distanciaObjetivo,custoCaminho,custoTotal):
         self.numeroCacifo = numeroCacifo #o numero do quadrado (para o robo saber a posiçao)
         self.distanciaOjetivo = distanciaObjetivo #a heuristica, distancia até a cerca/ovelha
-        #self.custoCaminho = custoCaminho
+        self.custoCaminho = custoCaminho #o G na funçao do A*
+        self.custoTotal = custoTotal #O f na funçao do A*
         self.paredeUp = False
         self.paredeDown = False
         self.paredeRight = False
         self.paredeLeft = False
+        self.parentCacifo = parentCacifo #de onde veio (so é usado no A*)
+
 
 array_pode_avancar = []
 paredes = [] #array com as paredes 
@@ -47,24 +51,25 @@ posicao_ovelhas = []
 robot = DriveBase(motor_esquerdo, motor_direito, wheel_diameter = 55.5, axle_track= 104)
 
 informacao = Pastor(1,0)  #Informação sobre o robot
-arrayCacifos_com_heuristica = [] #array que guarda os cacifos com o seu numero e heuristica ate á cerca
+arrayCacifos_com_heuristica = [cacifo(1,10,0,11,False,False,False,False)] #array que guarda os cacifos com o seu numero e heuristica ate á cerca
 
 def guarda_posicao_ovelha():
-    k = informacao.posicao
-    if(informacao.direcao == 0):#se a ovelha estiver acima do robo
-        k += 6
-    if(informacao.direcao == 90):#se a ovelha estiver a esquerda 
-        k -= 1
-    if(informacao.direcao == 180):#se a ovelha estiver abaixo
-        k -= 6
-    if(informacao.posicao == 270):#se a ovelha estiver a direita
-        k += 1
-    if(k not in posicao_ovelhas):
-        posicao_ovelhas.append(k)
+    if(len(posicao_ovelhas) != 2):
+        k = informacao.posicao
+        if(informacao.direcao == 0):#se a ovelha estiver acima do robo
+            k += 6
+        if(informacao.direcao == 90):#se a ovelha estiver a esquerda 
+            k -= 1
+        if(informacao.direcao == 180):#se a ovelha estiver abaixo
+            k -= 6
+        if(informacao.posicao == 270):#se a ovelha estiver a direita
+            k += 1
+        if(k not in posicao_ovelhas):
+            posicao_ovelhas.append(k)
 
 def inicializaCacifos():#funcao que da os valores da heuristica e custo do caminho a todos os cacifos (antes de encontrar paredes/ovelhas)
-    k = 10 #k é a heuristica do cacifo até a cerca
-    for j in range(1,37):#j é o numero do cacifo
+    k = 9 #k é a heuristica do cacifo até a cerca
+    for j in range(2,37):#j é o numero do cacifo
         if(j==7):
             k=9
         if(j==13):
@@ -75,33 +80,126 @@ def inicializaCacifos():#funcao que da os valores da heuristica e custo do camin
             k=6
         if(j==31):
             k=5
-        CacifoClasse = cacifo(j,k,False,False,False,False)
+        CacifoClasse = cacifo(None,j,k,0,k)
         arrayCacifos_com_heuristica.append(CacifoClasse)
         k-=1
 
+def CacifoAtual(numero_cacifo):
+    cacifoFiller = cacifo(None,100,100,200,300) #caso esteja a procura dum cacifo fora do tabuleiro
+    for j in arrayCacifos_com_heuristica:
+        if(j.numeroCacifo == numero_cacifo):
+            return j
+    return cacifoFiller #quando procura algo fora dos limites do tabuleiro
+
+def algoritmo_A_star(goal):#devolve um array com o caminho(nº dos cacifos a seguir começando na sua posiçao)
+    global arrayCacifos_com_heuristica
+    arrayBackup = cp.deepcopy(arrayCacifos_com_heuristica) #faz uma copia da variavel
+    openList = []       #cacifos que nao verificou
+    closedList = []     #cacifos que ja verificou 
+    inicio = CacifoAtual(informacao.posicao)
+    inicio.custoTotal = 0 #isto modifica a varivel global mas pq?
+    openList.append(inicio)
+    while(len(openList) > 0):
+        #vai buscar o cacifo atual
+        arrayCacifos_com_heuristica = cp.deepcopy(arrayBackup)#restora o array ao estado original para nao criar parentNodes infinitos
+        currentNode:cacifo = openList[0]
+        currentIndex = 0
+        for index, item in enumerate(openList): #item é o elemento atual da lista; index é o index do elemento atual
+            if(item.custoTotal < currentNode.custoTotal): #caso exista um cacifo mais barato do que o currentNode
+                currentNode = item
+                currentIndex = index
+        #tira o cacifo verificado da openList e mete na lista dos que ja verificou
+        openList.pop(currentIndex)
+        closedList.append(currentNode)
+        #mudar o current node para o mais barato 
+        if(currentNode.numeroCacifo == goal): #caso chegue ao objetivo
+            path = []
+            current = currentNode
+            while(current is not None):#ciclo para guardar o caminho, vai percorrendo os pais dos nos ate chegar ao inicio
+                path.append(current.numeroCacifo)
+                current = current.parentCacifo
+            return path[::-1] #devolve o caminho ao contrario (ou seja na ordem começando onde ele esta)
+        #caso esteja num dos limites
+        children =[]
+        childUp = CacifoAtual(37)
+        childDown = CacifoAtual(37)
+        childLeft = CacifoAtual(37)
+        childRight = CacifoAtual(37)
+        #gera os cacifos adjacentes 
+        if(currentNode.numeroCacifo < 30):
+            childUp = CacifoAtual(currentNode.numeroCacifo + 6) #abre o cacifo em cima do currentNode
+            childUp.parentCacifo = currentNode
+        if(currentNode.numeroCacifo > 6):
+            childDown = CacifoAtual(currentNode.numeroCacifo - 6) #abre o cacifo abaixo do currentNode
+            childDown.parentCacifo = currentNode
+        if(currentNode.numeroCacifo not in [31,25,19,13,7,1]):
+            childLeft = CacifoAtual(currentNode.numeroCacifo - 1) #abre o cacifo a esquerda
+            childLeft.parentCacifo = currentNode
+        if(currentNode.numeroCacifo not in [36,30,24,18,12,6]):
+            childRight = CacifoAtual(currentNode.numeroCacifo + 1) #abre o cacifo a direita
+            childRight.parentCacifo = currentNode
+        #verificaçoes para saber se tem paredes a volta/esta nos limites do tabuleiro
+        if(currentNode.paredeUp == True or currentNode.numeroCacifo > 30):#caso tenha uma parede em cima ou esteja nos cacifos do topo
+            childUp.custoCaminho += 100
+        if(currentNode.paredeDown == True or currentNode.numeroCacifo < 7):#caso parede em baixo ou esteja na primeira linha de cacifos
+            childDown.custoCaminho += 100
+        if(currentNode.paredeLeft == True or currentNode.numeroCacifo in [31,25,19,13,7,1]):#caso parede a esquerda ou esteja nos cacifos mais a esquerda
+            childLeft.custoCaminho += 100
+        if(currentNode.paredeRight == True or currentNode.numeroCacifo in [36,30,24,18,12,6]):#caso parede a direita ou esteja nos cacifos mais a direta
+            childRight.custoCaminho += 100
+        children.append(childUp)
+        children.append(childDown)
+        children.append(childLeft)
+        children.append(childRight)
+        for child in children:
+            if(child in closedList):#se ja verificou este child
+                continue
+            child.custoCaminho = currentNode.custoCaminho + 1 #custa sempre 1 para andar para qq um dos child pois sao os cacifos adajacentes
+            child.custoTotal = child.custoCaminho + child.distanciaOjetivo #custo total para chegar a este cacifo
+            if(child in openList):#caso nao tenha verificado este child
+                var =  openList.index(child)
+                if(child.custoCaminho >= openList[var].custoCaminho):#verifica se o custoCaminho do child atual é maior do que o proximo elemento na openList (ou seja se é o mais barato) se nao for passa po proximo
+                    continue
+            #adiciona a child á lista dos nao verificados
+            openList.append(child)
+
+
+
 def adiciona_parede():
-    #x_parede = informacao.posicao
-    #y_parede = 0
-    for j in arrayCacifos_com_heuristica: #percorre cada elemento da classe cacifo do array
-        if(j.numeroCacifo == informacao.posicao): #quando encontra o cacifo atual 
+    j=0
+    while(j != len(arrayCacifos_com_heuristica)):
+        if(arrayCacifos_com_heuristica[j].numeroCacifo == informacao.posicao):
             if(informacao.direcao==0): # Virado para cima
-                #y_parede = x_parede + 6
-                j.paredeUp = True
+                #guarda que este cacifo tem uma parede em cima
+                arrayCacifos_com_heuristica[j].paredeUp = True
+                #colocamos a parede do cacifo acima 
+                if(arrayCacifos_com_heuristica[j].numeroCacifo < 31):
+                    #guarda que o cacifo de cima do atual tem uma parede em baixo
+                    arrayCacifos_com_heuristica[j+6].paredeDown = True
+
             elif(informacao.direcao==270): # Virado para a direita
-                #y_parede = x_parede + 1
-                j.paredeRight = True
+                #guarda que este cacifo tem uma parede a dirieta
+                arrayCacifos_com_heuristica[j].paredeRight = True
+                #colocamos a parede do cacifo a sua direita
+                if(arrayCacifos_com_heuristica[j].numeroCacifo not in [36,30,24,18,12,6]): #caso nao esteja nos limites do mapa a direita
+                    #guarda que o cacifo a direita do atual tem uma parde a sua esquerda
+                    arrayCacifos_com_heuristica[j+1].paredeLeft = True
+
             elif(informacao.direcao==180): # Virado para baixo
-                #y_parede = x_parede - 6
-                j.paredeDown = True
+                #guarda que este cacifo tem uma parede em baixo
+                arrayCacifos_com_heuristica[j].paredeDown = True
+                #colocamos a parede no cacifo abaixo
+                if(arrayCacifos_com_heuristica[j].numeroCacifo > 6): #caso nao esteja nos limites do mapa em baixo
+                    #guarda que o cacifo a abaixo do atual tem uma parede em cima
+                    arrayCacifos_com_heuristica[j-6].paredeUp = True
+
             elif(informacao.direcao==90): # Virado para a esquerda
-                #y_parede = x_parede -1
-                j.paredeLeft = True
-            #if(([x_parede, y_parede] not in paredes)):#verifica se essa parede ja se encontra no array (pode ter as duas posiçoes em que encontra a parede)
-                #paredes.append([x_parede,y_parede])
-                #return True
-            #elif(([x_parede, y_parede] in paredes)):
-                #return False
-        
+                arrayCacifos_com_heuristica[j].paredeLeft = True
+                #colocamos a parede do cacifo a esquerda
+                if(arrayCacifos_com_heuristica[j].numeroCacifo not in [1,7,13,19,25,31]): #caso nao esteja nos limites do mapa a esquerda
+                    #guarda que o cacifo a direita do atual tem uma parde a sua esquerda
+                    arrayCacifos_com_heuristica[j-1].paredeRight = True
+        j+=1
 
 def pode_avancar_parede():
     #percorrer o array das paredes para ver
@@ -346,8 +444,11 @@ def andar():
         vira(90)
         
 def main():
-    while True:
-        verifica_cacifo()
+    inicializaCacifos()
+    algoritmo_A_star(30)
+
+    #while True:
+        #verifica_cacifo()
         #if(sensor_cor.color() == Color.BLUE):
             #robot.Stop()
 
