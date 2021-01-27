@@ -26,6 +26,7 @@ class cacifo:
         self.paredeRight = False
         self.paredeLeft = False
         self.parentCacifo = parentCacifo #de onde veio (so é usado no A*)
+        self.movementDebuff = 0         #custo adicional qd encontra uma parede(para n ir para elas)
 
 
 array_pode_avancar = []
@@ -139,13 +140,13 @@ def algoritmo_A_star(goal):#devolve um array com o caminho(nº dos cacifos a seg
             childRight.parentCacifo = currentNode
         #verificaçoes para saber se tem paredes a volta/esta nos limites do tabuleiro
         if(currentNode.paredeUp == True or currentNode.numeroCacifo > 30):#caso tenha uma parede em cima ou esteja nos cacifos do topo
-            childUp.custoCaminho += 100
+            childUp.movementDebuff += 100
         if(currentNode.paredeDown == True or currentNode.numeroCacifo < 7):#caso parede em baixo ou esteja na primeira linha de cacifos
-            childDown.custoCaminho += 100
+            childDown.movementDebuff += 100
         if(currentNode.paredeLeft == True or currentNode.numeroCacifo in [31,25,19,13,7,1]):#caso parede a esquerda ou esteja nos cacifos mais a esquerda
-            childLeft.custoCaminho += 100
+            childLeft.movementDebuff += 100
         if(currentNode.paredeRight == True or currentNode.numeroCacifo in [36,30,24,18,12,6]):#caso parede a direita ou esteja nos cacifos mais a direta
-            childRight.custoCaminho += 100
+            childRight.movementDebuff += 100
         children.append(childUp)
         children.append(childDown)
         children.append(childLeft)
@@ -154,7 +155,7 @@ def algoritmo_A_star(goal):#devolve um array com o caminho(nº dos cacifos a seg
             if(child in closedList):#se ja verificou este child
                 continue
             child.custoCaminho = currentNode.custoCaminho + 1 #custa sempre 1 para andar para qq um dos child pois sao os cacifos adajacentes
-            child.custoTotal = child.custoCaminho + child.distanciaOjetivo #custo total para chegar a este cacifo
+            child.custoTotal = child.custoCaminho + child.distanciaOjetivo + child.movementDebuff #custo total para chegar a este cacifo
             if(child in openList):#caso nao tenha verificado este child
                 var =  openList.index(child)
                 if(child.custoCaminho >= openList[var].custoCaminho):#verifica se o custoCaminho do child atual é maior do que o proximo elemento na openList (ou seja se é o mais barato) se nao for passa po proximo
