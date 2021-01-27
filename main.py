@@ -50,7 +50,7 @@ posicao_ovelhas = []
 robot = DriveBase(motor_esquerdo, motor_direito, wheel_diameter = 55.5, axle_track= 104)
 
 informacao = Pastor(1,0)  #Informação sobre o robot
-arrayCacifos_com_heuristica = [cacifo(1,10,0,11,False,False,False,False)] #array que guarda os cacifos com o seu numero e heuristica ate á cerca
+arrayCacifos_com_heuristica = [cacifo(None,1,10,0,11)] #array que guarda os cacifos com o seu numero e heuristica ate á cerca
 
 def guarda_posicao_ovelha():
     if(len(posicao_ovelhas) != 2):
