@@ -29,7 +29,6 @@ class cacifo:
 
 
 array_pode_avancar = []
-paredes = [] #array com as paredes 
 ev3=EV3Brick()
 precionado = 0
 encontrou_parede = 0
@@ -201,54 +200,7 @@ def adiciona_parede():
                     arrayCacifos_com_heuristica[j-1].paredeRight = True
         j+=1
 
-def pode_avancar_parede():
-    #percorrer o array das paredes para ver
-    #ver se a posicao atual é y_parede x_parede
-    #e devolver se tem parede adjacente ou seja se pode avancar ou nao
-    for k in paredes: #percorre o array das paredes
-        if(k[0] == informacao.posicao):
-            if(informacao.posicao + 6 == k[1]):#caso a parede esteja para cima
-                if(informacao.direcao == 0):#virado para cima
-                    return False
-                else:
-                    return True
-            elif(informacao.posicao + 1 == k[1]):#caso a parede esteja para a direita
-                if(informacao.direcao == 270): #virado para a direita
-                    return False
-                else:
-                    return True
-            elif(informacao.posicao - 6 == k[1]):#caso a parede esteja para baixo
-                if(informacao.direcao == 180):#virado para baixo
-                    return False
-                else:
-                    return True
-            elif(informacao.posicao - 1 == k[1]):#caso a parede esteja para a esquerda
-                if(informacao.direcao == 90): #virado para a esquerda
-                    return False
-                else:
-                    return True
-        elif(k[1] == informacao.posicao):
-            if(informacao.posicao + 6 == k[0]):#caso a parede esteja para cima
-                if(informacao.direcao == 0):#virado para cima
-                    return False
-                else:
-                    return True
-            elif(informacao.posicao + 1 == k[0]):#caso a parede esteja para a direita
-                if(informacao.direcao == 270): #virado para a direita
-                    return False
-                else:
-                    return True
-            elif(informacao.posicao - 6 == k[0]):#caso a parede esteja para baixo
-                if(informacao.direcao == 180):#virado para baixo
-                    return False
-                else:
-                    return True
-            elif(informacao.posicao - 1 == k[0]):#caso a parede esteja para a esquerda
-                if(informacao.direcao == 90): #virado para a esquerda
-                    return False
-                else:
-                    return True
-    return True
+
 #adiciona o cacifo, ao array cacifos visitados 
 def adiciona_visitados(pos):
     visitado = procura_visitado(pos) #procura se já está no array
@@ -408,40 +360,7 @@ def atualiza_posicao():
     
 
 
-def andar():
-    global graus #array com os graus que pode virar
-    global i #serve para guardar quantas extremidades do quadrado ja verificou
-    aleatorio = randint(0,2)
-    virar=graus[aleatorio] #seliciona aleatoriamente se vai virar 90;180 ou 270 graus
-    while(sensor_cor.color()== Color.WHITE):
-        robot.drive(75,-1)
-    robot.stop() #quando deixa de ver branco para de andar
-    if(sensor_cor.color()==Color.BLACK): #Encontra limite do cacifo
-        ovelhas()
-        if(obstacle_sensor.distance() < 200):#verificar distancia
-            vira(90)
-        robot.straight(-50)
-        vira(90)
-        i+=1
-        if(i >= 4): #quando ja verificou todos os lados do quadrado
-            vira(virar) #depois de ver as quatros paredes vira para um lado random
-            if(pode_avancar() and pode_avancar_parede()):
-                robot.straight(200) #Anda até o centro do cacifo adjacente
-                atualiza_posicao()
-                i = 0
-            elif(pode_avancar() == False):
-                #robot.straight(-50) # Volta para trás
-                ev3.speaker.beep() 
-                vira(virar) #Roda para aleatorio              
-    elif(sensor_cor.color()==Color.RED): #Encontra parede
-        ovelhas()
-        if(obstacle_sensor.distance() < 200):#verificar distancia
-            robot.turn(90)      
-        adiciona_parede()
-        ev3.speaker.beep()
-        robot.straight(-50)
-        i += 1
-        vira(90)
+
         
 def main():
     inicializaCacifos()
